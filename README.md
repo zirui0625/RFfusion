@@ -7,6 +7,6 @@
 ### Efficient Rectified Flow for Image Fusion [Neurips 2025]
 
 <div align=center>
-<img src="https://github.com/zirui0625/RFfusion/blob/main/figures/network.png" width="90%">
+<img src="https://github.com/zirui0625/RFfusion/blob/main/figures/pipeline.pngg" width="90%">
 </div>
 
