@@ -13,4 +13,4 @@
 ## Contact
 If you have any questions, feel free to contact me through <code style="background-color: #f0f0f0;">ziruiwang0625@gmail.com</code>。
 ## Acknowledgement
-Our codes are based on [ResShift]([https://github.com/zsyOAOA/ResShift](https://github.com/gnobitab/RectifiedFlow)), [SinSR](https://github.com/wyf0912/SinSR), thanks for their contribution.
+Our codes are based on [RectifiedFlow]([(https://github.com/gnobitab/RectifiedFlow)]), [SinSR](https://github.com/wyf0912/SinSR), thanks for their contribution.
