@@ -13,4 +13,4 @@
 ## Contact
 If you have any questions, feel free to contact me through <code style="background-color: #f0f0f0;">ziruiwang0625@gmail.com</code>。
 ## Acknowledgement
-Our codes are based on [Rectified Flow](https://github.com/gnobitab/RectifiedFlow), [LDM](https://github.com/CompVis/latent-diffusion), thanks for their contribution.
+Our codes are based on [Rectified Flow](https://github.com/gnobitab/RectifiedFlow), [LDM](https://github.com/CompVis/latent-diffusion), [DDFM](https://github.com/Zhaozixiang1228/MMIF-DDFM), thanks for their contribution.
