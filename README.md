@@ -10,6 +10,9 @@
 <img src="https://github.com/zirui0625/RFfusion/blob/main/figures/pipeline.png" width="90%">
 </div>
 
+## Updates
+[2025-9-25] Our paper has been accepted by Neurips 2025. You can find our paper [here](https://arxiv.org/pdf/2509.16549).  
+
 ## Citation
 ```
 @article{wang2025efficient,
