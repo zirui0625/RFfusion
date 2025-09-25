@@ -10,6 +10,15 @@
 <img src="https://github.com/zirui0625/RFfusion/blob/main/figures/pipeline.png" width="90%">
 </div>
 
+## Citation
+```
+@article{li2025difiisr,
+  title={DifIISR: A Diffusion Model with Gradient Guidance for Infrared Image Super-Resolution},
+  author={Li, Xingyuan and Wang, Zirui and Zou, Yang and Chen, Zhixin and Ma, Jun and Jiang, Zhiying and Ma, Long and Liu, Jinyuan},
+  journal={arXiv preprint arXiv:2503.01187},
+  year={2025}
+}
+```
 ## Contact
 If you have any questions, feel free to contact me through <code style="background-color: #f0f0f0;">ziruiwang0625@gmail.com</code>。
 ## Acknowledgement
