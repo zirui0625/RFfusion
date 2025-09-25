@@ -12,10 +12,10 @@
 
 ## Citation
 ```
-@article{li2025difiisr,
-  title={DifIISR: A Diffusion Model with Gradient Guidance for Infrared Image Super-Resolution},
-  author={Li, Xingyuan and Wang, Zirui and Zou, Yang and Chen, Zhixin and Ma, Jun and Jiang, Zhiying and Ma, Long and Liu, Jinyuan},
-  journal={arXiv preprint arXiv:2503.01187},
+@article{wang2025efficient,
+  title={Efficient Rectified Flow for Image Fusion},
+  author={Wang, Zirui and Zhang, Jiayi and Guan, Tianwei and Zhou, Yuhan and Li, Xingyuan and Dong, Minjing and Liu, Jinyuan},
+  journal={arXiv preprint arXiv:2509.16549},
   year={2025}
 }
 ```
