@@ -21,6 +21,10 @@ conda activate RFfusion
 # install requirements
 pip install -r requirements.txt
 ```
+## Test
+```
+python sample.py
+```
 
 ## Citation
 ```
