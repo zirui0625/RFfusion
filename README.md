@@ -13,6 +13,15 @@
 ## Updates
 [2025-9-25] Our paper has been accepted by Neurips 2025. You can find our paper [here](https://arxiv.org/pdf/2509.16549).  
 
+## Environment
+```
+# create virtual environment
+conda create -n RFfusion python=3.8
+conda activate RFfusion
+# install requirements
+pip install -r requirements.txt
+```
+
 ## Citation
 ```
 @article{wang2025efficient,
