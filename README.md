@@ -28,11 +28,11 @@ python sample.py
 ## Results
 
 <div align=center>
-<img src="https://github.com/zirui0625/RFfusion/blob/main/figures/result1.png" width="90%">
+<img src="https://github.com/zirui0625/RFfusion/blob/main/figures/result1.png" width="100%">
 </div>
 
 <div align=center>
-<img src="https://github.com/zirui0625/RFfusion/blob/main/figures/result2.png" width="90%">
+<img src="https://github.com/zirui0625/RFfusion/blob/main/figures/result2.png" width="100%">
 </div>
 
 
