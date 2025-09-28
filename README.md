@@ -25,6 +25,16 @@ pip install -r requirements.txt
 ```
 python sample.py
 ```
+## Results
+
+<div align=center>
+<img src="https://github.com/zirui0625/RFfusion/blob/main/figures/result1.png" width="90%">
+</div>
+
+<div align=center>
+<img src="https://github.com/zirui0625/RFfusion/blob/main/figures/result2.png" width="90%">
+</div>
+
 
 ## Citation
 ```
