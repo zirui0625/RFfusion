@@ -22,7 +22,7 @@ conda activate RFfusion
 pip install -r requirements.txt
 ```
 ## Test
-Download the Rectified Flow checkpoint from [here](https://github.com/gnobitab/RectifiedFlow), we use 'checkpoint12.pth' for sampling, and put it in './model'. Our pretrained VAE model can be found in [here](https://drive.google.com/file/d/10Rmz6YtGnM2qHk1QfjCY9eEFkh0gsvVZ/view?usp=drive_link), also put it in './model'. 
+Download the Rectified Flow checkpoint from [here](https://github.com/gnobitab/RectifiedFlow), we use 'checkpoint12.pth' for sampling, and put it in './model'. Our pretrained VAE model can be found in [here](https://drive.google.com/file/d/10Rmz6YtGnM2qHk1QfjCY9eEFkh0gsvVZ/view?usp=drive_link), also put it in './model'. You can test our method through
 ```
 python sample.py
 ```
