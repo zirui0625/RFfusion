@@ -22,7 +22,7 @@ conda activate RFfusion
 pip install -r requirements.txt
 ```
 ## Test
-Download the Rectified Flow checkpoint from [here](https://github.com/gnobitab/RectifiedFlow), we use 'checkpoint12.pth' for sampling, and put it in './model'
+Download the Rectified Flow checkpoint from [here](https://github.com/gnobitab/RectifiedFlow), we use 'checkpoint12.pth' for sampling, and put it in './model'.
 ```
 python sample.py
 ```
