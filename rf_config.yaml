@@ -1,0 +1,91 @@
+device: 'cuda:0'
+
+training:
+  continuous: false
+  sde: 'rectified_flow'
+
+sampling:
+  snr: 0.075
+  sigma_variance: 0.0
+  init_noise_scale: 1.0
+  use_ode_sampler: 'euler'
+  ode_tol: 1e-5
+  sample_N: 1
+  method: 'rectified_flow'
+  init_type: 'gaussian'
+  size: [768, 1024]
+
+eval:
+  path: './input/M3FD'
+  batch_size: 1
+
+data:
+  image_size: 256
+  random_flip: true
+  uniform_dequantization: false
+  centered: false
+  num_channels: 3
+
+model:
+  path: './model/checkpoint_12.pth'
+  name: 'ncsnpp'
+  sigma_max: 380
+  sigma_min: 0.01
+  num_scales: 2000
+  beta_min: 0.1
+  beta_max: 20.0
+  dropout: 0.0
+  embedding_type: 'fourier'
+  scale_by_sigma: true
+  ema_rate: 0.999
+  normalization: 'GroupNorm'
+  nonlinearity: 'swish'
+  nf: 128
+  ch_mult: [1, 1, 2, 2, 2, 2, 2]
+  num_res_blocks: 2
+  attn_resolutions: [16]
+  resamp_with_conv: true
+  conditional: true
+  fir: true
+  fir_kernel: [1, 3, 3, 1]
+  skip_rescale: true
+  resblock_type: 'biggan'
+  progressive: 'output_skip'
+  progressive_input: 'input_skip'
+  progressive_combine: 'sum'
+  attention_type: 'ddpm'
+  init_scale: 0.0
+  fourier_scale: 16
+  conv_size: 3
+
+autoencoder:
+  target: ldm.models.autoencoder.VQModel
+  ckpt_path: ./model/autoencoder.ckpt
+  use_fp16: True
+  params:
+    embed_dim: 3
+    n_embed: 8192
+    ddconfig:
+      double_z: False
+      z_channels: 3
+      resolution: 256
+      in_channels: 3
+      out_ch: 3
+      ch: 128
+      ch_mult:
+      - 1
+      - 2
+      - 4
+      num_res_blocks: 2
+      attn_resolutions: []
+      dropout: 0.0
+      padding_mode: zeros
+    lossconfig:
+      target: taming.modules.losses.vqperceptual.VQLPIPSWithDiscriminator
+      params:
+        disc_conditional: false
+        disc_in_channels: 3
+        disc_start: 0
+        disc_weight: 0.75
+        codebook_weight: 1.0
+
