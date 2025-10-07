@@ -26,6 +26,8 @@ Download the Rectified Flow checkpoint from [here](https://github.com/gnobitab/R
 ```
 python sample.py
 ```
+## Train
+
 ## Results
 
 <div align=center>
