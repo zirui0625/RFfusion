@@ -29,7 +29,7 @@ python sample.py
 ## Train
 
 ### Stage I
-You can download the training data from [LLVIP](https://bupt-ai-cz.github.io/LLVIP/), [MSRS](https://github.com/Linfeng-Tang/MSRS), and place it in `./data`. You can download the initial VAE model (f=4, VQ) from [ldm](https://github.com/CompVis/latent-diffusion) and place it in `./model`.
+You can download the training data from [LLVIP](https://bupt-ai-cz.github.io/LLVIP/), [MSRS](https://github.com/Linfeng-Tang/MSRS), and place it in `./data`. You can download the initial VAE model (f=4, VQ) from [LDM](https://github.com/CompVis/latent-diffusion) and place it in `./model`.
 
 ```
 CUDA_VISIBLE_DEVICES=0 python train_vae.py -b ./vae_config.yaml -t -r ./model/model.ckpt --gpus 0,
