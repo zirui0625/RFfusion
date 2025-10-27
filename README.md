@@ -27,6 +27,8 @@ Download the Rectified Flow checkpoint from [here](https://github.com/gnobitab/R
 python sample.py
 ```
 ## Train
+
+# Stage I
 ```
 CUDA_VISIBLE_DEVICES=0 python train_vae.py -b ./vae_config.yaml -t -r ./model/model.ckpt --gpus 0,
 ```
