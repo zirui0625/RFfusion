@@ -28,7 +28,7 @@ python sample.py
 ```
 ## Train
 ```
-python train_vae.py
+CUDA_VISIBLE_DEVICES=0 python train_vae.py -b ./vae_config.yaml -t -r ./model/model.ckpt --gpus 0,
 ```
 ## Results
 
