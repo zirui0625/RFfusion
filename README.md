@@ -34,7 +34,12 @@ You can download the training data from [LLVIP](https://bupt-ai-cz.github.io/LLV
 ```
 CUDA_VISIBLE_DEVICES=0 python train_vae.py -b ./vae_config.yaml -t -r ./model/model.ckpt --gpus 0,
 ```
-### Stage I
+### Stage II
+You can download the training data from [MSRS](https://github.com/Linfeng-Tang/MSRS), and place it in `./data`.
+
+```
+CUDA_VISIBLE_DEVICES=0 python train_vae.py -b ./vae_config.yaml -t -r ./model/model.ckpt --gpus 0,
+```
 
 ## Results
 You can download the training data from [MSRS](https://github.com/Linfeng-Tang/MSRS), and place it in `./data`.
