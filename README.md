@@ -42,11 +42,6 @@ CUDA_VISIBLE_DEVICES=0 python train_fusion.py,
 ```
 
 ## Results
-You can download the training data from [MSRS](https://github.com/Linfeng-Tang/MSRS), and place it in `./data`.
-
-```
-CUDA_VISIBLE_DEVICES=0 python train_fusion.py,
-```
 <div align=center>
 <img src="https://github.com/zirui0625/RFfusion/blob/main/figures/result1.png" width="100%">
 </div>
