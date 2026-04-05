@@ -38,7 +38,7 @@ CUDA_VISIBLE_DEVICES=0 python train_vae.py -b ./vae_config.yaml -t -r ./model/mo
 You can download the training data from [MSRS](https://github.com/Linfeng-Tang/MSRS), and place it in `./data`.
 
 ```
-CUDA_VISIBLE_DEVICES=0 python train_vae.py -b ./vae_config.yaml -t -r ./model/model.ckpt --gpus 0,
+CUDA_VISIBLE_DEVICES=0 python train_fusion.py,
 ```
 
 ## Results
