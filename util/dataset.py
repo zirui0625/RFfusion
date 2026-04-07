@@ -9,18 +9,18 @@ class SimpleDataSet(Dataset):
         self.phase = phase
         '''
         if phase=='train':
-            self.infrared_path = data_root + '/ir/train'
-            self.visible_path = data_root + '/vi/train'
+            self.infrared_path = data_root + 'train/ir/'
+            self.visible_path = data_root + 'train/vi/'
         if phase=='eval':
-            self.infrared_path = data_root + '/ir/test'
-            self.visible_path = data_root + '/vi/test'
+            self.infrared_path = data_root + 'test/ir/'
+            self.visible_path = data_root + 'test/vi/'
         '''
         if phase == 'train':
-            self.infrared_path = os.path.join(data_root, 'ir', 'train')
-            self.visible_path = os.path.join(data_root, 'vi', 'train')
+            self.infrared_path = os.path.join(data_root, 'train', 'ir')
+            self.visible_path = os.path.join(data_root,  'train', 'vi')
         elif phase == 'eval':
-            self.infrared_path = os.path.join(data_root, 'ir', 'test')
-            self.visible_path = os.path.join(data_root, 'vi', 'test')
+            self.infrared_path = os.path.join(data_root, 'test', 'ir')
+            self.visible_path = os.path.join(data_root,  'test', 'vi')
         else:
             raise ValueError(f"Unknown phase: {phase}")
         self.infrared_files = sorted(os.listdir(self.infrared_path))  
