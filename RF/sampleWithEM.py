@@ -104,7 +104,7 @@ def p_sample(x, t, bfHP, infrared, visible, lamb, rho, alphas_cumprod, alphas_cu
 
     # Add noise if not the final timestep
     sample = mean_pred
-    if t != 0:
+    if t[0].item() != 0:
         sample += sigma * noise
 
     return {"sample": sample, "pred_xstart": pred}, bfHP
