@@ -37,23 +37,24 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Train the VAE decoder with a frozen Rectified Flow fusion sampler."
     )
-    parser.add_argument("--data-root", type=str, default="./data/MSRS")
-    parser.add_argument("--rf-config", type=str, default="./rf_config.yaml")
+    parser.add_argument("--data_root", type=str, default="./data/MSRS")
+    parser.add_argument("--rf_config", type=str, default="./rf_config.yaml")
     parser.add_argument("--device", type=str, default="cuda")
-    parser.add_argument("--gpu-id", type=str, default="0")
+    parser.add_argument("--gpu_id", type=str, default="0")
     parser.add_argument("--epochs", type=int, default=40)
-    parser.add_argument("--batch-size", type=int, default=2)
+    parser.add_argument("--batch_size", type=int, default=2)
     parser.add_argument("--lr", type=float, default=1e-4)
-    parser.add_argument("--num-workers", type=int, default=8)
+    parser.add_argument("--num_workers", type=int, default=8)
     parser.add_argument("--seed", type=int, default=3407)
-    parser.add_argument("--log-root", type=str, default="./logs")
-    parser.add_argument("--val-every", type=int, default=2)
-    parser.add_argument("--save-every", type=int, default=2)
+    parser.add_argument("--log_root", type=str, default="./logs")
+    parser.add_argument("--val_every", type=int, default=2)
+    parser.add_argument("--save_every", type=int, default=2)
     parser.add_argument("--resume", type=str, default="")
-    parser.add_argument("--save-val-images", action="store_true")
+    parser.add_argument("--save_val_images", action="store_true")
     parser.add_argument(
-        "--force-ae-fp32",
+        "--force_ae_fp32",
         action="store_true",
+        default=True,
         help="Force the trainable autoencoder to float32 for stable decoder training.",
     )
     return parser.parse_args()
