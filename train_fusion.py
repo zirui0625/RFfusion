@@ -16,6 +16,7 @@ from tqdm import tqdm
 import yaml
 
 from RF.models.utils import create_model
+import RF.models.ncsnpp
 from RF.models.ema import ExponentialMovingAverage
 from RF.utils import restore_checkpoint
 from RF import sde_lib
