@@ -1,0 +1,38 @@
+seed: 23
+device: cuda:0
+paths:
+  rf_config: ./rf_config.yaml
+  vae_checkpoint: ./model/stage12_best_epoch0051.ckpt
+  output_root: ./logs/stage3
+data:
+  crop_size: 256
+  val_fraction: 0.05
+  strict_pairs: true
+  batch_size: 8
+  num_workers: 4
+  datasets:
+  - name: MSRS_TRAIN
+    infrared_dir: ./datasets/MSRS/ir
+    visible_dir: ./datasets/MSRS/vi
+  - name: LLVIP_TRAIN
+    infrared_dir: ./datasets/LLVIP/infrared/train
+    visible_dir: ./datasets/LLVIP/visible/train
+model:
+  lambda_reconstruction: 1.0
+  lambda_commitment: 0.25
+  lambda_task: 8.07
+  reconstruction_ssim_weight: 0.2
+  rf_native_size: [64, 64]
+  checkpoint_decoder: false
+training:
+  max_epochs: 15
+  scheduler_max_epochs: 15
+  max_steps: 23530
+  encoder_lr: 1.0e-5
+  min_lr: 1.0e-7
+  weight_decay: 0.0
+  gradient_clip: 1.0
+  checkpoint_every: 1
+  validate_every_epochs: 1
+  early_stopping_patience: 6
+  early_stopping_min_delta: 0.0
