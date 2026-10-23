@@ -16,11 +16,10 @@ from tqdm import tqdm
 import yaml
 
 from RF.models.utils import create_model
-import RF.models.ncsnpp
 from RF.models.ema import ExponentialMovingAverage
 from RF.utils import restore_checkpoint
 from RF import sde_lib
-from RF.sampling import get_sampling_fn
+from training.decoder_sampling import get_sampling_fn
 
 from util import transforms as T
 from util.dataset import SimpleDataSet
@@ -38,7 +37,7 @@ def parse_args() -> argparse.Namespace:
         description="Train the VAE decoder with a frozen Rectified Flow fusion sampler."
     )
     parser.add_argument("--data_root", type=str, default="./data/MSRS")
-    parser.add_argument("--rf_config", type=str, default="./rf_config.yaml")
+    parser.add_argument("--rf_config", type=str, default="./configs/stage2.yaml")
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--gpu_id", type=str, default="0")
     parser.add_argument("--epochs", type=int, default=40)
@@ -51,12 +50,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--save_every", type=int, default=2)
     parser.add_argument("--resume", type=str, default="")
     parser.add_argument("--save_val_images", action="store_true")
-    parser.add_argument(
-        "--force_ae_fp32",
-        action="store_true",
-        default=True,
-        help="Force the trainable autoencoder to float32 for stable decoder training.",
-    )
     return parser.parse_args()
 
 def set_seed(seed: int) -> None:
@@ -186,7 +179,7 @@ def enable_decoder_only(autoencoder: torch.nn.Module) -> Iterable[torch.nn.Param
 
     return trainable
 
-def load_autoencoder_pair(rf_config: Dict, device: torch.device, force_fp32: bool = False):
+def load_autoencoder_pair(rf_config: Dict, device: torch.device):
     ae_cfg = rf_config.get("autoencoder")
     if ae_cfg is None:
         raise ValueError("rf_config['autoencoder'] must be provided.")
@@ -202,12 +195,8 @@ def load_autoencoder_pair(rf_config: Dict, device: torch.device, force_fp32: boo
     ae_train = instantiate_from_config(ae_cfg).to(device)
     load_model(ae_train, ckpt_path, str(device))
 
-    if ae_cfg.get("use_fp16", False) and not force_fp32:
-        ae_sampler = ae_sampler.half()
-        ae_train = ae_train.half()
-    else:
-        ae_sampler = ae_sampler.float()
-        ae_train = ae_train.float()
+    ae_sampler = ae_sampler.float()
+    ae_train = ae_train.float()
 
     trainable_params = list(enable_decoder_only(ae_train))
     return ae_sampler, ae_train, trainable_params
@@ -246,7 +235,13 @@ def save_checkpoint(path: Path, autoencoder: torch.nn.Module, optimizer, schedul
     torch.save(checkpoint, path)
 
 class FrozenRFSampler:
-    def __init__(self, rf_config: Dict, rf_model: torch.nn.Module, ae_sampler: torch.nn.Module, device: torch.device):
+    def __init__(
+        self,
+        rf_config: Dict,
+        rf_model: torch.nn.Module,
+        ae_sampler: torch.nn.Module,
+        device: torch.device,
+    ):
         self.rf_config = copy.deepcopy(rf_config)
         self.rf_config["device"] = str(device)
         self.rf_model = rf_model
@@ -294,7 +289,9 @@ class FrozenRFSampler:
 
         z_start = encode_first_stage(x_start, self.ae_sampler)
         sample_fn = self._get_sample_fn(batch_size)
-        fused, _ = sample_fn(self.rf_model, z_start, ir_cond, vis_cond, self.ae_sampler)
+        fused, _ = sample_fn(
+            self.rf_model, z_start, ir_cond, vis_cond, self.ae_sampler
+        )
         fused = torch.clamp(fused, 0.0, 1.0)
         return fused
 
@@ -410,6 +407,7 @@ def run_epoch(
 def main() -> None:
     args = parse_args()
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu_id
+    import RF.models.ncsnpp  # registers the RF model after CLI parsing
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
     set_seed(args.seed)
 
@@ -426,9 +424,11 @@ def main() -> None:
 
     rf_model = load_rf_model(rf_config, device)
     ae_sampler, ae_train, decoder_params = load_autoencoder_pair(
-        rf_config, device, force_fp32=args.force_ae_fp32
+        rf_config, device
     )
-    rf_sampler = FrozenRFSampler(rf_config, rf_model, ae_sampler, device)
+    rf_sampler = FrozenRFSampler(
+        rf_config, rf_model, ae_sampler, device
+    )
 
     optimizer = torch.optim.Adam(decoder_params, lr=args.lr)
     scheduler = create_lr_scheduler(optimizer, len(train_loader), args.epochs, warmup=True)

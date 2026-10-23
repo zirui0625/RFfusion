@@ -52,6 +52,12 @@ def get_parser(**parser_kwargs):
         help="resume from logdir or checkpoint in logdir",
     )
     parser.add_argument(
+        "--init-from",
+        type=str,
+        default="",
+        help="initialize model weights from a checkpoint without restoring optimizer or training state",
+    )
+    parser.add_argument(
         "-b",
         "--base",
         nargs="*",
@@ -254,7 +260,7 @@ class SetupCallback(Callback):
             ckpt_path = os.path.join(self.ckptdir, "last.ckpt")
             trainer.save_checkpoint(ckpt_path)
 
-    def on_pretrain_routine_start(self, trainer, pl_module):
+    def on_fit_start(self, trainer, pl_module):
         if trainer.global_rank == 0:
             # Create logdirs and save configs
             os.makedirs(self.logdir, exist_ok=True)
@@ -294,8 +300,9 @@ class ImageLogger(Callback):
         self.rescale = rescale
         self.batch_freq = batch_frequency
         self.max_images = max_images
+        logger_cls = getattr(pl.loggers, "TestTubeLogger", pl.loggers.TensorBoardLogger)
         self.logger_log_images = {
-            pl.loggers.TestTubeLogger: self._testtube,
+            logger_cls: self._testtube,
         }
         self.log_steps = [2 ** n for n in range(int(np.log2(self.batch_freq)) + 1)]
         if not increase_log_steps:
@@ -380,7 +387,7 @@ class ImageLogger(Callback):
             return True
         return False
 
-    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
+    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0):
         if not self.disabled and (pl_module.global_step > 0 or self.log_first_step):
             self.log_img(pl_module, batch, batch_idx, split="train")
 
@@ -396,18 +403,20 @@ class CUDACallback(Callback):
     # see https://github.com/SeanNaren/minGPT/blob/master/mingpt/callback.py
     def on_train_epoch_start(self, trainer, pl_module):
         # Reset the memory use counter
-        torch.cuda.reset_peak_memory_stats(trainer.root_gpu)
-        torch.cuda.synchronize(trainer.root_gpu)
+        device = trainer.strategy.root_device
+        torch.cuda.reset_peak_memory_stats(device)
+        torch.cuda.synchronize(device)
         self.start_time = time.time()
 
-    def on_train_epoch_end(self, trainer, pl_module, outputs):
-        torch.cuda.synchronize(trainer.root_gpu)
-        max_memory = torch.cuda.max_memory_allocated(trainer.root_gpu) / 2 ** 20
+    def on_train_epoch_end(self, trainer, pl_module, outputs=None):
+        device = trainer.strategy.root_device
+        torch.cuda.synchronize(device)
+        max_memory = torch.cuda.max_memory_allocated(device) / 2 ** 20
         epoch_time = time.time() - self.start_time
 
         try:
-            max_memory = trainer.training_type_plugin.reduce(max_memory)
-            epoch_time = trainer.training_type_plugin.reduce(epoch_time)
+            max_memory = trainer.strategy.reduce(max_memory)
+            epoch_time = trainer.strategy.reduce(epoch_time)
 
             rank_zero_info(f"Average Epoch time: {epoch_time:.2f} seconds")
             rank_zero_info(f"Average Peak memory {max_memory:.2f}MiB")
@@ -468,6 +477,10 @@ if __name__ == "__main__":
     parser = Trainer.add_argparse_args(parser)
 
     opt, unknown = parser.parse_known_args()
+    if opt.resume and opt.init_from:
+        raise ValueError("--resume and --init-from cannot be specified together.")
+    if opt.init_from and not os.path.isfile(opt.init_from):
+        raise ValueError("Cannot find initialization checkpoint {}".format(opt.init_from))
     if opt.name and opt.resume:
         raise ValueError(
             "-n/--name and -r/--resume cannot be specified both."
@@ -533,6 +546,14 @@ if __name__ == "__main__":
 
         # model
         model = instantiate_from_config(config.model)
+        if opt.init_from:
+            init_checkpoint = torch.load(opt.init_from, map_location="cpu", weights_only=False)
+            if "state_dict" not in init_checkpoint:
+                raise KeyError("{} does not contain 'state_dict'".format(opt.init_from))
+            model.load_state_dict(init_checkpoint["state_dict"], strict=True)
+            print("Initialized model weights from {} (optimizer and training state not restored).".format(
+                opt.init_from
+            ))
 
         # trainer and callbacks
         trainer_kwargs = dict()
@@ -556,7 +577,10 @@ if __name__ == "__main__":
                 }
             },
         }
-        default_logger_cfg = default_logger_cfgs["testtube"]
+        default_logger_cfg = default_logger_cfgs["testtube"] if hasattr(pl.loggers, "TestTubeLogger") else {
+            "target": "pytorch_lightning.loggers.TensorBoardLogger",
+            "params": {"name": "tensorboard", "save_dir": logdir},
+        }
         if "logger" in lightning_config:
             logger_cfg = lightning_config.logger
         else:
@@ -624,6 +648,21 @@ if __name__ == "__main__":
         }
         if version.parse(pl.__version__) >= version.parse('1.4.0'):
             default_callbacks_cfg.update({'checkpoint_callback': modelckpt_cfg})
+            if getattr(model, "monitor", None) == "val/rec_loss":
+                default_callbacks_cfg.update({
+                    "aeloss_checkpoint": {
+                        "target": "pytorch_lightning.callbacks.ModelCheckpoint",
+                        "params": {
+                            "dirpath": ckptdir,
+                            "filename": "aeloss-{epoch:06}",
+                            "monitor": "val/aeloss",
+                            "mode": "min",
+                            "save_top_k": 3,
+                            "save_last": False,
+                            "verbose": True,
+                        },
+                    },
+                })
 
         if "callbacks" in lightning_config:
             callbacks_cfg = lightning_config.callbacks

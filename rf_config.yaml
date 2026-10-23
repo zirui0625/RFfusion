@@ -12,6 +12,14 @@ sampling:
   ode_tol: 1e-5
   sample_N: 1
   method: 'rectified_flow'
+  guidance_scale: 0.01
+  guidance_loss_scale: 2048.0
+  guidance_intensity_weight: 0.15
+  guidance_gradient_weight: 0.02
+  guidance_structure_weight: 0.03
+  guidance_saliency_weight: 0.8
+  guidance_ssim_window: 11
+  select_temperature: 0.5
   init_type: 'gaussian'
   size: [768, 1024]
 
@@ -60,8 +68,8 @@ model:
 
 autoencoder:
   target: ldm.models.autoencoder.VQModel
-  ckpt_path: ./model/autoencoder.ckpt
-  use_fp16: True
+  ckpt_path: ./model/autoencoder_rffusionpp.ckpt
+  use_fp16: False
   params:
     embed_dim: 3
     n_embed: 8192
@@ -88,4 +96,3 @@ autoencoder:
         disc_start: 0
         disc_weight: 0.75
         codebook_weight: 1.0
-
