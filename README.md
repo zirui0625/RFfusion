@@ -6,7 +6,10 @@
 ### Efficient Rectified Flow for Image Fusion [NeurIPS 2025]
 
 <div align=center>
-<img src="https://github.com/zirui0625/RFfusion/blob/main/figures/pipeline.png" width="90%">
+<img src="https://github.com/zirui0625/RFfusion/blob/main/figures/RFframework.pdf" width="90%">
+</div>
+<div align=center>
+<img src="https://github.com/zirui0625/RFfusion/blob/main/figures/VAEtraining.pdf" width="90%">
 </div>
 
 ## Updates
@@ -62,13 +65,16 @@ For multi-exposure fusion、multi-focus fusion and medical fusion tasks，you ca
 
 ## Results
 <div align=center>
-<img src="https://github.com/zirui0625/RFfusion/blob/main/figures/result1.png" width="100%">
+<img src="https://github.com/zirui0625/RFfusion/blob/main/figures/FusionComparison.pdf" width="100%">
 </div>
 
 <div align=center>
-<img src="https://github.com/zirui0625/RFfusion/blob/main/figures/result2.png" width="100%">
+<img src="https://github.com/zirui0625/RFfusion/blob/main/figures/exp+focusComp.pdf" width="100%">
 </div>
 
+<div align=center>
+<img src="https://github.com/zirui0625/RFfusion/blob/main/figures/medicComp.pdf" width="100%">
+</div>
 
 ## Citation
 ```
