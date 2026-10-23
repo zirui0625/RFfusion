@@ -1,5 +1,7 @@
 """Stripped version of https://github.com/richzhang/PerceptualSimilarity/tree/master/models"""
 
+import os
+
 import torch
 import torch.nn as nn
 from torchvision import models
@@ -14,7 +16,8 @@ class LPIPS(nn.Module):
         super().__init__()
         self.scaling_layer = ScalingLayer()
         self.chns = [64, 128, 256, 512, 512]  # vg16 features
-        self.net = vgg16(pretrained=True, requires_grad=False)
+        load_torchvision_weights = os.environ.get("RFFUSION_SKIP_VGG_DOWNLOAD") != "1"
+        self.net = vgg16(pretrained=load_torchvision_weights, requires_grad=False)
         self.lin0 = NetLinLayer(self.chns[0], use_dropout=use_dropout)
         self.lin1 = NetLinLayer(self.chns[1], use_dropout=use_dropout)
         self.lin2 = NetLinLayer(self.chns[2], use_dropout=use_dropout)
@@ -120,4 +123,3 @@ def normalize_tensor(x,eps=1e-10):
 
 def spatial_average(x, keepdim=True):
     return x.mean([2,3],keepdim=keepdim)
-
