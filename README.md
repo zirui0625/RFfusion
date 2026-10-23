@@ -57,6 +57,7 @@ We evaluate image fusion and downstream performance using the following datasets
 | Multi-focus fusion | MFFW | [MFFW dataset information](https://github.com/shuangxu96/MFF-SSIM) |
 | Multi-focus fusion | MFI-WHU | [MFI-WHU](https://github.com/HaoZhang1018/MFI-WHU) |
 | Semantic segmentation | FMB | [SegMiF](https://github.com/JinyuanLiu-CV/SegMiF) |
+
 For multi-exposure fusion、multi-focus fusion and medical fusion tasks，you can download our testsets in [here](https://drive.google.com/file/d/1vE262kD5IwTXfEj53fqcWzKSdvApCHN4/view?usp=sharing).
 
 ## Results
