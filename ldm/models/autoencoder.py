@@ -195,7 +195,7 @@ class VQModel(pl.LightningModule):
             del log_dict_ae[f"val{suffix}/rec_loss"]
         self.log_dict(log_dict_ae)
         self.log_dict(log_dict_disc)
-        return self.log_dict
+        return log_dict_ae
 
     def configure_optimizers(self):
         lr_d = self.learning_rate
