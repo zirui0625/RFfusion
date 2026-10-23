@@ -21,7 +21,7 @@ conda activate RFfusion
 pip install -r requirements.txt
 ```
 ## Test
-Download the Rectified Flow checkpoint from [here](https://github.com/gnobitab/RectifiedFlow), we use 'checkpoint12.pth' for sampling, and put it in './model'. Our pretrained VAE model can be found in [here](https://drive.google.com/file/d/10Rmz6YtGnM2qHk1QfjCY9eEFkh0gsvVZ/view?usp=drive_link), also put it in './model'. You can test our method through
+Download the Rectified Flow checkpoint from [here](https://github.com/gnobitab/RectifiedFlow), we use 'checkpoint12.pth' for sampling, and put it in './model'. Our pretrained VAE model (stage I+II) can be found in [here](https://drive.google.com/file/d/10Rmz6YtGnM2qHk1QfjCY9eEFkh0gsvVZ/view?usp=drive_link), also put it in './model'. Our pretrained VAE model (after stage III) can be found in [here](https://drive.google.com/file/d/1NYLQW94FjOQ_q7XX6fWVRM-O-j_fcM5E/view?usp=drive_link). You can test our method through
 ```
 python sample.py
 ```
@@ -37,8 +37,27 @@ CUDA_VISIBLE_DEVICES=0 python train_vae.py -b ./vae_config.yaml -t -r ./model/mo
 You can download the training data from [MSRS](https://github.com/Linfeng-Tang/MSRS), and place it in `./data`.
 
 ```
-CUDA_VISIBLE_DEVICES=0 python train_fusion.py
+CUDA_VISIBLE_DEVICES=0 python train_fusion.py --rf_config configs/stage2.yaml
 ```
+### Stage III
+Set the Stage I–II VAE and paired LLVIP/MSRS directories in `configs/stage3.yaml`. 
+```
+CUDA_VISIBLE_DEVICES=0 python train_stage3.py --config configs/stage3.yaml
+```
+### Relevant Datasets
+We evaluate image fusion and downstream performance using the following datasets.
+
+| Task | Dataset | Original source |
+| --- | --- | --- |
+| Infrared–visible fusion and object detection | M$^3$FD | [TarDAL](https://github.com/JinyuanLiu-CV/TarDAL) |
+| Infrared–visible fusion | TNO | [TNO Image Fusion Dataset](https://figshare.com/articles/dataset/TNO_Image_Fusion_Dataset/1008029) |
+| Infrared–visible fusion and efficiency evaluation | RoadScene | [RoadScene](https://github.com/hanna-xu/RoadScene) |
+| Multi-exposure fusion | MEFB | [MEFB](https://github.com/xingchenzhang/MEFB) |
+| Multi-focus fusion | Lytro | [Lytro Multi-focus Image Dataset](https://github.com/mnnejati/LytroDataset) |
+| Multi-focus fusion | MFFW | [MFFW dataset information](https://github.com/shuangxu96/MFF-SSIM) |
+| Multi-focus fusion | MFI-WHU | [MFI-WHU](https://github.com/HaoZhang1018/MFI-WHU) |
+| Semantic segmentation | FMB | [SegMiF](https://github.com/JinyuanLiu-CV/SegMiF) |
+For multi-exposure fusion、multi-focus fusion and medical fusion tasks，you can download our testsets in [here](https://drive.google.com/file/d/1vE262kD5IwTXfEj53fqcWzKSdvApCHN4/view?usp=sharing).
 
 ## Results
 <div align=center>
