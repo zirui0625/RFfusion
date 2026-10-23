@@ -1,165 +1,131 @@
 # coding=utf-8
-# Copyright 2020 The Google Research Authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-# pylint: skip-file
-# pytype: skip-file
-"""Various sampling methods."""
-import functools
+"""One-step image fusion with RF-aligned guidance."""
 
 import torch
-import numpy as np
-import abc
 
-from RF.sampleWithEM import p_sample, compute_alphas_cumprod
-from RF.models.utils import from_flattened_numpy, to_flattened_numpy, get_score_fn
-from scipy import integrate
-import RF.sde_lib
 import RF.models.utils as mutils
-from util.common import decode_first_stage, encode_first_stage
-import matplotlib.pyplot as plt
-
-import torchvision
-from tqdm import tqdm
-
+from RF.fusion_energy import FusionEnergy
+from RF.rf_aligned_guidance import effective_rf_aligned_step
+from RF.sampleWithEM import compute_alphas_cumprod, p_sample
 from guided_diffusion.EM_onestep import EM_Initial
+from util.common import decode_first_stage
+
 
 def get_sampling_fn(config, sde, shape, inverse_scaler, eps):
-    """Create a sampling function.
-
-  Args:
-    config: A `ml_collections.ConfigDict` object that contains all configuration information.
-    sde: A `sde_lib.SDE` object that represents the forward SDE.
-    shape: A sequence of integers representing the expected shape of a single sample.
-    inverse_scaler: The inverse data normalizer function.
-    eps: A `float` number. The reverse-time SDE is only integrated to `eps` for numerical stability.
-
-  Returns:
-    A function that takes random states and a replicated training state and outputs samples with the
-      trailing dimensions matching `shape`.
-  """
-
-    sampler_name = config["sampling"]["method"]
-    # Probability flow ODE sampling with black-box ODE solvers
-    if sampler_name.lower() == 'rectified_flow':
-        sampling_fn = get_rectified_flow_sampler(sde=sde, shape=shape, inverse_scaler=inverse_scaler,
-                                                 device=config["device"])
-    else:
-        raise ValueError(f"Sampler name {sampler_name} unknown.")
-
-    return sampling_fn
+    del eps
+    if config["sampling"]["method"].lower() != "rectified_flow":
+        raise ValueError("RF-aligned guidance requires rectified_flow")
+    sampling = config["sampling"]
+    return get_rectified_flow_sampler(
+        sde=sde,
+        shape=shape,
+        inverse_scaler=inverse_scaler,
+        device=config["device"],
+        guidance_scale=sampling.get("guidance_scale", 0.01),
+        guidance_loss_scale=sampling.get("guidance_loss_scale", 2048.0),
+        intensity_weight=sampling.get("guidance_intensity_weight", 0.15),
+        gradient_weight=sampling.get("guidance_gradient_weight", 0.02),
+        structure_weight=sampling.get("guidance_structure_weight", 0.03),
+        saliency_weight=sampling.get("guidance_saliency_weight", 0.8),
+        saliency_temperature=sampling.get("select_temperature", 0.5),
+        ssim_window=int(sampling.get("guidance_ssim_window", 11)),
+        normalize_gradient=sampling.get("guidance_normalize_gradient", True),
+    )
 
 
-def get_rectified_flow_sampler(sde, shape, inverse_scaler, device = 'cuda:0', lamb=0.5, rho=0.01):
-    """
-  Get rectified flow sampler
+def get_rectified_flow_sampler(
+    sde,
+    shape,
+    inverse_scaler,
+    device="cuda:0",
+    lamb=0.5,
+    rho=0.01,
+    guidance_scale=0.01,
+    guidance_loss_scale=2048.0,
+    intensity_weight=0.15,
+    gradient_weight=0.02,
+    structure_weight=0.03,
+    saliency_weight=0.8,
+    saliency_temperature=0.5,
+    ssim_window=11,
+    normalize_gradient=True,
+):
+    if sde.use_ode_sampler != "euler":
+        raise ValueError("RF-aligned guidance requires Euler sampling")
+    if int(sde.sample_N) != 1:
+        raise ValueError("RF-aligned guidance requires one-step sampling")
+    if float(sde.sigma_t(1e-3)) != 0.0:
+        raise ValueError("RF-aligned guidance requires sigma_variance=0")
+    fusion_energy = FusionEnergy(
+        intensity_weight=float(intensity_weight),
+        gradient_weight=float(gradient_weight),
+        structure_weight=float(structure_weight),
+        saliency_weight=float(saliency_weight),
+        saliency_temperature=float(saliency_temperature),
+        ssim_window=int(ssim_window),
+    ).to(device)
+    alphas_cumprod, alphas_cumprod_prev = compute_alphas_cumprod(
+        [0.1] * 1000
+    )
 
-  Returns:
-    A sampling function that returns samples and the number of function evaluations during sampling.
-  """
+    def euler_sampler(
+        model,
+        z=None,
+        infrared=None,
+        visible=None,
+        autoencoder=None,
+    ):
+        if z is None:
+            z0 = sde.get_z0(
+                torch.zeros(shape, device=device), train=False
+            ).to(device)
+            x = z0.detach().clone()
+        else:
+            x = z
+        if infrared is None or visible is None or autoencoder is None:
+            raise ValueError("RF-aligned guidance requires both sources and VAE")
 
-    def euler_sampler(model, z=None, infrared=None, visible=None, autoencoder=None):
-        """The probability flow ODE sampler with simple Euler discretization.
-    Args:
-      model: A velocity model.
-      z: If present, generate samples from latent code `z`.
-    Returns:
-      samples, number of function evaluations.
-    """
+        model_fn = mutils.get_model_fn(model, train=False)
+        dt = 1.0 / float(sde.sample_N)
+        num_t = 1e-3
+        t = torch.full(
+            (x.shape[0],), num_t, device=x.device, dtype=x.dtype
+        )
         with torch.no_grad():
-            if z is None:
-                z0 = sde.get_z0(torch.zeros(shape, device=device), train=False).to(device)
-                x = z0.detach().clone()
-            else:
-                x = z
+            velocity_image = decode_first_stage(
+                model_fn(x, t * 999.0), autoencoder
+            )
+            bfHP = EM_Initial(infrared)
+            prediction, _ = p_sample(
+                x=velocity_image,
+                t=t,
+                bfHP=bfHP,
+                infrared=infrared,
+                visible=visible,
+                lamb=lamb,
+                rho=rho,
+                alphas_cumprod=alphas_cumprod,
+                alphas_cumprod_prev=alphas_cumprod_prev,
+            )
+            current_image = decode_first_stage(x, autoencoder)
+            # pred_xstart is the EM prior before the DDIM-style reconstruction.
+            effective_update = prediction["pred_xstart"].expand_as(
+                current_image
+            )
 
-            model_fn = mutils.get_model_fn(model, train=False)
+        fused_image, _ = effective_rf_aligned_step(
+            current_image,
+            effective_update,
+            ((visible + 1.0) * 0.5).float(),
+            ((infrared + 1.0) * 0.5).float(),
+            fusion_energy,
+            dt=dt,
+            guidance_scale=float(guidance_scale),
+            guidance_loss_scale=float(guidance_loss_scale),
+            normalize_gradient=normalize_gradient,
+        )
+        return inverse_scaler(fused_image.detach()), 1
 
-            dt = 1. / sde.sample_N
-            eps = 1e-3 
-
-            for i in range(sde.sample_N):
-                num_t = i / sde.sample_N * (sde.T - eps) + eps
-                t = torch.ones(shape[0], device=device) * num_t
-                pred = model_fn(x, t * 999) 
-                pred = decode_first_stage(pred, autoencoder)
-                
-                sigma_t = sde.sigma_t(num_t)
-                betas = [0.1] * 1000  
-                alphas_cumprod, alphas_cumprod_prev = compute_alphas_cumprod(betas)
-                bfHP = EM_Initial(infrared)
-                pred_dict, bfHP = p_sample(x=pred, t=t, bfHP=bfHP, infrared=infrared, visible=visible, lamb=lamb,
-                            rho=rho,alphas_cumprod=alphas_cumprod, alphas_cumprod_prev=alphas_cumprod_prev)
-                pred = pred_dict["sample"]  
-              
-                x = decode_first_stage(x, autoencoder)  
-                num_t = float(num_t) 
-                pred_sigma = pred + (sigma_t ** 2) / (2 * (sde.noise_scale ** 2) * ((1. - num_t) ** 2)) * (
-                        0.5 * num_t * (1. - num_t) * pred - 0.5 * (2. - num_t) * x)
-                x = x + pred_sigma * dt + sigma_t * np.sqrt(dt) * torch.randn_like(pred_sigma).to(
-                    device)
-
-            x = inverse_scaler(x)
-            nfe = sde.sample_N
-            return x, nfe
-
-    def rk45_sampler(model, z=None):
-        """The probability flow ODE sampler with black-box ODE solver.
-
-    Args:
-      model: A velocity model.
-      z: If present, generate samples from latent code `z`.
-    Returns:
-      samples, number of function evaluations.
-    """
-        with torch.no_grad():
-            rtol = atol = sde.ode_tol
-            rtol = float(rtol)
-            atol = float(atol)
-            method = 'RK45'
-            eps = 1e-3
-
-            # Initial sample
-            if z is None:
-                z0 = sde.get_z0(torch.zeros(shape, device=device), train=False).to(device)
-                x = z0.detach().clone()
-            else:
-                x = z
-
-            model_fn = mutils.get_model_fn(model, train=False)
-
-            def ode_func(t, x):
-                x = from_flattened_numpy(x, shape).to(device).type(torch.float32)
-                vec_t = torch.ones(shape[0], device=x.device) * t
-                drift = model_fn(x, vec_t * 999)
-
-                return to_flattened_numpy(drift)
-
-            # Black-box ODE solver for the probability flow ODE
-            solution = integrate.solve_ivp(ode_func, (eps, sde.T), to_flattened_numpy(x),
-                                           rtol=rtol, atol=atol, method=method)
-            nfe = solution.nfev
-            x = torch.tensor(solution.y[:, -1]).reshape(shape).to(device).type(torch.float32)
-
-            x = inverse_scaler(x)
-
-            return x, nfe
-
-    print('Type of Sampler:', sde.use_ode_sampler)
-    if sde.use_ode_sampler == 'rk45':
-        return rk45_sampler
-    elif sde.use_ode_sampler == 'euler':
-        return euler_sampler
-    else:
-        assert False, 'Not Implemented!'
+    print("Type of Sampler:", sde.use_ode_sampler)
+    print("RF-aligned guidance: EM effective-update RF alignment")
+    return euler_sampler
