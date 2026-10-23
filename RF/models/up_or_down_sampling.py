@@ -137,7 +137,7 @@ def upsample_conv_2d(x, w, k=None, factor=2, gain=1):
   #     data_format=data_format)
   ## JAX equivalent
 
-  return upfirdn2d(x, torch.tensor(k, device=x.device),
+  return upfirdn2d(x, torch.tensor(k, device=x.device, dtype=x.dtype),
                    pad=((p + 1) // 2 + factor - 1, p // 2 + 1))
 
 
@@ -173,7 +173,7 @@ def conv_downsample_2d(x, w, k=None, factor=2, gain=1):
   k = _setup_kernel(k) * gain
   p = (k.shape[0] - factor) + (convW - 1)
   s = [factor, factor]
-  x = upfirdn2d(x, torch.tensor(k, device=x.device),
+  x = upfirdn2d(x, torch.tensor(k, device=x.device, dtype=x.dtype),
                 pad=((p + 1) // 2, p // 2))
   return F.conv2d(x, w, stride=s, padding=0)
 
@@ -220,7 +220,7 @@ def upsample_2d(x, k=None, factor=2, gain=1):
     k = [1] * factor
   k = _setup_kernel(k) * (gain * (factor ** 2))
   p = k.shape[0] - factor
-  return upfirdn2d(x, torch.tensor(k, device=x.device),
+  return upfirdn2d(x, torch.tensor(k, device=x.device, dtype=x.dtype),
                    up=factor, pad=((p + 1) // 2 + factor - 1, p // 2))
 
 
@@ -253,5 +253,5 @@ def downsample_2d(x, k=None, factor=2, gain=1):
     k = [1] * factor
   k = _setup_kernel(k) * gain
   p = k.shape[0] - factor
-  return upfirdn2d(x, torch.tensor(k, device=x.device),
+  return upfirdn2d(x, torch.tensor(k, device=x.device, dtype=x.dtype),
                    down=factor, pad=((p + 1) // 2, p // 2))
